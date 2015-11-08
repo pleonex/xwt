@@ -1,21 +1,21 @@
-// 
+//
 // TextEntryBackend.cs
-//  
+//
 // Author:
 //       Lluis Sanchez <lluis@xamarin.com>
-// 
+//
 // Copyright (c) 2011 Xamarin Inc
-// 
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -39,7 +39,7 @@ using AppKit;
 
 namespace Xwt.Mac
 {
-	public class TextEntryBackend: ViewBackend<NSView,ITextEntryEventSink>, ITextEntryBackend
+	public class TextEntryBackend: ViewBackend<NSView,ITextBoxEventSink>, ITextEntryBackend, ITextAreaBackend
 	{
 		int cacheSelectionStart, cacheSelectionLength;
 		bool checkMouseSelection;
@@ -47,12 +47,12 @@ namespace Xwt.Mac
 		public TextEntryBackend ()
 		{
 		}
-		
+
 		internal TextEntryBackend (MacComboBox field)
 		{
 			ViewObject = field;
 		}
-		
+
 		public override void Initialize ()
 		{
 			base.Initialize ();
@@ -61,7 +61,11 @@ namespace Xwt.Mac
 			} else {
 				var view = new CustomTextField (EventSink, ApplicationContext);
 				ViewObject = new CustomAlignedContainer (EventSink, ApplicationContext, (NSView)view);
-				MultiLine = false;
+				if (Frontend is Xwt.TextArea)
+					MultiLine = true;
+				else
+					MultiLine = false;
+				Wrap = WrapMode.None;
 			}
 			Widget.StringValue = string.Empty;
 
@@ -78,7 +82,7 @@ namespace Xwt.Mac
 					HandleSelectionChanged ();
 			};
 		}
-		
+
 		protected override void OnSizeToFit ()
 		{
 			Container.SizeToFit ();
@@ -134,7 +138,7 @@ namespace Xwt.Mac
 				Widget.Bordered = value;
 			}
 		}
-		
+
 		public string PlaceholderText {
 			get {
 				return ((NSTextFieldCell) Widget.Cell).PlaceholderString;
@@ -156,17 +160,46 @@ namespace Xwt.Mac
 				if (value) {
 					Widget.Cell.UsesSingleLineMode = false;
 					Widget.Cell.Scrollable = false;
-					Widget.Cell.Wraps = true;
 				} else {
 					Widget.Cell.UsesSingleLineMode = true;
 					Widget.Cell.Scrollable = true;
-					Widget.Cell.Wraps = false;
 				}
 				Container.ExpandVertically = value;
 			}
 		}
 
-		public int CursorPosition { 
+		public WrapMode Wrap {
+			get {
+				if (!Widget.Cell.Wraps)
+					return WrapMode.None;
+				switch (Widget.Cell.LineBreakMode) {
+				case NSLineBreakMode.ByWordWrapping:
+					return WrapMode.Word;
+				case NSLineBreakMode.CharWrapping:
+					return WrapMode.Character;
+				default:
+					return WrapMode.None;
+				}
+			}
+			set {
+				if (value == WrapMode.None) {
+					Widget.Cell.Wraps = false;
+				} else {
+					Widget.Cell.Wraps = true;
+					switch (value) {
+					case WrapMode.Word:
+					case WrapMode.WordAndCharacter:
+						Widget.Cell.LineBreakMode = NSLineBreakMode.ByWordWrapping;
+						break;
+					case WrapMode.Character:
+						Widget.Cell.LineBreakMode = NSLineBreakMode.CharWrapping;
+						break;
+					}
+				}
+			}
+		}
+
+		public int CursorPosition {
 			get {
 				if (Widget.CurrentEditor == null)
 					return 0;
@@ -178,7 +211,7 @@ namespace Xwt.Mac
 			}
 		}
 
-		public int SelectionStart { 
+		public int SelectionStart {
 			get {
 				if (Widget.CurrentEditor == null)
 					return 0;
@@ -190,7 +223,7 @@ namespace Xwt.Mac
 			}
 		}
 
-		public int SelectionLength { 
+		public int SelectionLength {
 			get {
 				if (Widget.CurrentEditor == null)
 					return 0;
@@ -202,7 +235,7 @@ namespace Xwt.Mac
 			}
 		}
 
-		public string SelectedText { 
+		public string SelectedText {
 			get {
 				if (Widget.CurrentEditor == null)
 					return String.Empty;
@@ -248,7 +281,7 @@ namespace Xwt.Mac
 		}
 
 		#endregion
-	
+
 
 		#region Gross Hack
 		// The 'Widget' property is not virtual and the one on the base class holds
@@ -276,10 +309,10 @@ namespace Xwt.Mac
 		}
 		#endregion
 	}
-	
+
 	class CustomTextField: NSTextField, IViewObject
 	{
-		ITextEntryEventSink eventSink;
+		ITextBoxEventSink eventSink;
 		ApplicationContext context;
 		CustomCell cell;
 
@@ -305,7 +338,7 @@ namespace Xwt.Mac
 		}
 
 		public ViewBackend Backend { get; set; }
-		
+
 		public override void DidChange (NSNotification notification)
 		{
 			base.DidChange (notification);

@@ -177,14 +177,24 @@ namespace Xwt.GtkBackend
 			throw new InvalidOperationException("Invalid TreeViewGridLines value: " + value);
 		}
 
-		public static float ToGtkAlignment(this Alignment alignment)
+		public static Gtk.Justification ToGtkJustification (this Alignment value)
 		{
-			switch(alignment) {
+			switch (value) {
+				case Alignment.Start: return Gtk.Justification.Left;
+				case Alignment.Center: return Gtk.Justification.Center;
+				case Alignment.End: return Gtk.Justification.Right;
+			}
+			throw new InvalidOperationException("Invalid Alignment value: " + value);
+		}
+
+		public static float ToGtkAlignment (this Alignment alignment)
+		{
+			switch (alignment) {
 				case Alignment.Start: return 0.0f;
 				case Alignment.Center: return 0.5f;
 				case Alignment.End: return 1.0f;
 			}
-			throw new InvalidOperationException("Invalid alignment value: " + alignment);
+			throw new InvalidOperationException("Invalid Alignment value: " + alignment);
 		}
 
 		public static Gtk.ResponseType ToResponseType (this Xwt.Command command)
@@ -207,6 +217,15 @@ namespace Xwt.GtkBackend
 				return Gtk.ResponseType.Reject;
 			return Gtk.ResponseType.None;
 		}
+
+		public static Alignment ToXwtValue (this Gtk.Justification value)
+		{
+			switch (value) {
+				case Gtk.Justification.Left: return Alignment.Start;
+				case Gtk.Justification.Center: return Alignment.Center;
+				case Gtk.Justification.Right: return Alignment.End;
+			}
+			return Alignment.Start; // return Start for unknown and Fill
+		}
 	}
 }
-
