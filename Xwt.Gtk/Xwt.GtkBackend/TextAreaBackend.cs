@@ -31,7 +31,7 @@ using Xwt.Drawing;
 
 namespace Xwt.GtkBackend
 {
-	public partial class TextAreaBackend : WidgetBackend, ITextAreaBackend
+    public partial class TextAreaBackend : WidgetBackend, ITextAreaBackend
 	{
 		public override void Initialize ()
 		{
@@ -213,6 +213,26 @@ namespace Xwt.GtkBackend
 				TextView.Buffer.SelectRange (start, end);
 			}
 		}
+
+        /// <summary>
+        /// Set the list of completions that will be shown by the entry
+        /// </summary>
+        /// <param name="completions">The list of completion or null if no completions should be shown</param>
+        public void SetCompletions (string[] completions)
+        {
+            // TODO: Check completions.
+        }
+
+        /// <summary>
+        /// Set a custom matching function used to decide which completion from SetCompletions list are shown
+        /// for the given input
+        /// </summary>
+        /// <param name="matchFunc">A function which parameter are, in order, the current text entered by the user and a completion candidate.
+        /// Returns true if the candidate should be included in the completion list.</param>
+        public void SetCompletionMatchFunc (Func<string, string, bool> matchFunc)
+        {
+            // TODO: Check completions.
+        }
 
 		public override void EnableEvent (object eventId)
 		{
